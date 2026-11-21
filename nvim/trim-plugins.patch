@@ -1,0 +1,173 @@
+diff --git a/titus-kickstart/lua/keymaps.lua b/titus-kickstart/lua/keymaps.lua
+index fcf06ba..6444d8c 100644
+--- a/titus-kickstart/lua/keymaps.lua
++++ b/titus-kickstart/lua/keymaps.lua
+@@ -145,5 +145,4 @@ end
+ -- [[ Tools & Plugins ]]
+ -- ============================================================
+ map('n', '<leader>a', ':Alpha<CR>', { silent = true, desc = 'Open [A]lpha dashboard' })
+-map('n', '<leader>p', '<cmd>PasteImage<CR>', { silent = true, desc = '[P]aste image from clipboard' })
+ map('n', '<F5>', '<cmd>UndotreeToggle<CR><cmd>UndotreeFocus<CR>', { silent = true, desc = 'Toggle Undotree' })
+diff --git a/titus-kickstart/plugin/completion.lua b/titus-kickstart/plugin/completion.lua
+index 7f60e61..acf835a 100644
+--- a/titus-kickstart/plugin/completion.lua
++++ b/titus-kickstart/plugin/completion.lua
+@@ -9,25 +9,17 @@ vim.api.nvim_create_autocmd('PackChanged', {
+         vim.system({ 'make', 'install_jsregexp' }, { cwd = ev.data.path })
+       end
+     end
+-    if name == 'CopilotChat.nvim' and (kind == 'install' or kind == 'update') then
+-      vim.system({ 'make', 'tiktoken' }, { cwd = ev.data.path })
+-    end
+   end,
+ })
+ 
+ vim.pack.add({
+   -- Completion engine
+   { src = 'https://github.com/saghen/blink.cmp', version = vim.version.range('1.x') },
+-  'https://github.com/giuxtaposition/blink-cmp-copilot',
+   -- Snippets
+   { src = 'https://github.com/L3MON4D3/LuaSnip', version = vim.version.range('2.x') },
+   -- Neovim Lua API completions
+   'https://github.com/folke/lazydev.nvim',
+-  -- GitHub Copilot (suggestions fed through blink.cmp)
+-  'https://github.com/zbirenbaum/copilot.lua',
+-  -- Copilot Chat
+-  { src = 'https://github.com/nvim-lua/plenary.nvim', version = 'master' },
+-  'https://github.com/CopilotC-Nvim/CopilotChat.nvim',
++  -- Copilot plugins removed (needs paid GitHub Copilot)
+ })
+ 
+ -- lazydev: Neovim Lua API types & completions for Lua config files
+@@ -49,9 +41,8 @@ require('blink.cmp').setup {
+   appearance = { nerd_font_variant = 'mono' },
+   completion = { documentation = { auto_show = false, auto_show_delay_ms = 500 } },
+   sources = {
+-    default = { 'lsp', 'path', 'snippets', 'lazydev', 'copilot' },
++    default = { 'lsp', 'path', 'snippets', 'lazydev' },
+     providers = {
+-      copilot = { name = 'copilot', module = 'blink-cmp-copilot', score_offset = 100 },
+       lazydev = { module = 'lazydev.integrations.blink', score_offset = 100 },
+     },
+   },
+@@ -60,54 +51,3 @@ require('blink.cmp').setup {
+   signature = { enabled = true },
+ }
+ 
+--- Copilot (inline suggestions disabled; fed through blink.cmp)
+-require('copilot').setup {
+-  suggestion = { enabled = false },
+-  panel = { enabled = false },
+-  filetypes = {
+-    markdown = true,
+-    yaml = true,
+-    help = false,
+-    gitcommit = false,
+-    gitrebase = false,
+-    hgcommit = false,
+-    svn = false,
+-    cvs = false,
+-    ['.'] = false,
+-  },
+-}
+-
+--- CopilotChat
+-require('CopilotChat').setup {
+-  model = 'auto',
+-  resources = { 'buffer:listed' },
+-  window = { layout = 'vertical', width = 0.4 },
+-  auto_insert_mode = true,
+-}
+-
+-local map = vim.keymap.set
+-map({ 'n', 'v' }, '<leader>cc', function() require('CopilotChat').toggle() end, { desc = '[C]opilot [C]hat toggle' })
+-map({ 'n', 'v' }, '<leader>cq', function()
+-  local input = vim.fn.input 'Quick Chat: '
+-  if input ~= '' then
+-    require('CopilotChat').ask(input, { resources = 'selection' })
+-  end
+-end, { desc = '[C]opilot [Q]uick Chat' })
+-map('n', '<leader>cp', '<cmd>CopilotChatPrompts<CR>', { desc = '[C]opilot [P]rompts' })
+-map('n', '<leader>cm', '<cmd>CopilotChatModels<CR>', { desc = '[C]opilot [M]odels' })
+-map('n', '<leader>cr', '<cmd>CopilotChatReset<CR>', { desc = '[C]opilot [R]eset chat' })
+-
+--- Hide Copilot inline suggestions when blink.cmp menu is open
+-vim.api.nvim_create_autocmd('User', {
+-  pattern = 'CopilotAttached',
+-  callback = function()
+-    vim.api.nvim_create_autocmd('User', {
+-      pattern = 'BlinkCmpMenuOpen',
+-      callback = function() vim.b.copilot_suggestion_hidden = true end,
+-    })
+-    vim.api.nvim_create_autocmd('User', {
+-      pattern = 'BlinkCmpMenuClose',
+-      callback = function() vim.b.copilot_suggestion_hidden = false end,
+-    })
+-  end,
+-})
+diff --git a/titus-kickstart/plugin/editor.lua b/titus-kickstart/plugin/editor.lua
+index 6d5230d..e5d716d 100644
+--- a/titus-kickstart/plugin/editor.lua
++++ b/titus-kickstart/plugin/editor.lua
+@@ -11,26 +11,26 @@ vim.pack.add({
+   'https://github.com/mfussenegger/nvim-lint',
+   -- Color highlighting
+   'https://github.com/brenoprata10/nvim-highlight-colors',
+-  -- Auto-save
+-  'https://github.com/Pocco81/auto-save.nvim',
++  -- Auto-save (disabled: writes half-finished edits to disk)
++  -- 'https://github.com/Pocco81/auto-save.nvim',
+   -- Auto-detect tab/space indentation
+   'https://github.com/NMAC427/guess-indent.nvim',
+   -- Todo comment highlights
+   'https://github.com/folke/todo-comments.nvim',
+   -- Paste images from clipboard into Markdown
+-  'https://github.com/HakonHarnes/img-clip.nvim',
++  -- 'https://github.com/HakonHarnes/img-clip.nvim', -- disabled: headless server
+   -- Persistent undo history tree (mapped to <F5>)
+   'https://github.com/mbbill/undotree',
+-  -- WakaTime coding time tracker
+-  'https://github.com/wakatime/vim-wakatime',
++  -- WakaTime coding time tracker (disabled: needs wakatime.com account/API key)
++  -- 'https://github.com/wakatime/vim-wakatime',
+   -- Edit files as sudo (:SudaWrite)
+   'https://github.com/lambdalisue/suda.vim',
+   -- Multi-cursor (Ctrl+N)
+   { src = 'https://github.com/mg979/vim-visual-multi', version = 'master' },
+   -- Grammarly LSP for prose
+-  'https://github.com/emacs-grammarly/lsp-grammarly',
++  -- 'https://github.com/emacs-grammarly/lsp-grammarly', -- disabled
+   -- F# language support
+-  'https://github.com/ionide/Ionide-vim',
++  -- 'https://github.com/ionide/Ionide-vim', -- disabled
+   -- Smart comment toggling
+   'https://github.com/numToStr/Comment.nvim',
+ })
+@@ -59,9 +59,6 @@ vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'InsertLeave' }, {
+ -- nvim-highlight-colors
+ require('nvim-highlight-colors').setup { render = 'background' }
+ 
+--- auto-save
+-require('auto-save').setup {}
+-
+ -- guess-indent
+ require('guess-indent').setup {}
+ 
+@@ -71,17 +68,3 @@ require('todo-comments').setup { signs = false }
+ -- Comment.nvim
+ require('Comment').setup()
+ 
+--- img-clip
+-local year = os.date '%Y'
+-require('img-clip').setup {
+-  default = {
+-    dir_path = '/home/titus/github/website/static/images/' .. year .. '/',
+-    extension = 'webp',
+-    process_cmd = '/usr/bin/cwebp -quiet -q 80 -o - -- - 2>/dev/null',
+-    template = '![$FILE_NAME_NO_EXT](/images/' .. year .. '/$FILE_NAME)',
+-    relative_template_path = false,
+-  },
+-  filetypes = {
+-    markdown = { template = '![$FILE_NAME_NO_EXT](/images/' .. year .. '/$FILE_NAME)' },
+-  },
+-}
